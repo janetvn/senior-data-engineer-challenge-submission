@@ -30,3 +30,13 @@ password: XfQFEiqZsMOz
 
 ![ER Digram](postgresql/er_diagram.png?raw=true "Title")
 
+
+## ANALYTICAL SQL QUERY 
+
+### Which are the top 10 members by spending
+
+Run the SQL query in file ``section_2_databases/analytical_sql/top_3_items_frequently_bought.sql``
+
+### Which are the top 3 items that are frequently brought by members
+
+Run the SQL query in file ``section_2_databases/analytical_sql/top_10_members_by_spending.sql``
