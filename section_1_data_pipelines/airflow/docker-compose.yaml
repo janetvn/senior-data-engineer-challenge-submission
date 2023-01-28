@@ -1,0 +1,205 @@
+---
+services:
+
+  postgres:
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_USER: airflow
+    healthcheck:
+      interval: 5s
+      retries: 5
+      test:
+        - CMD
+        - pg_isready
+        - "-U"
+        - airflow
+    image: "postgres:13"
+    restart: always
+    volumes:
+      - "postgres-db-volume:/var/lib/postgresql/data"
+
+  redis:
+    healthcheck:
+      interval: 5s
+      retries: 50
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 30s
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    restart: always
+
+  airflow-init:
+    command: version
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+      _AIRFLOW_DB_UPGRADE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_PASSWORD: "${_AIRFLOW_WWW_USER_PASSWORD:-airflow}"
+      _AIRFLOW_WWW_USER_USERNAME: "${_AIRFLOW_WWW_USER_USERNAME:-airflow}"
+#      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    image: "custom_airflow:2.5.1-python3.10"
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+    volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
+
+  airflow-scheduler:
+    command: scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+#      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    image: "custom_airflow:2.5.1-python3.10"
+    restart: always
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+    volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
+
+  airflow-webserver:
+    command: webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+#      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - curl
+        - "--fail"
+        - "http://localhost:8080/health"
+      timeout: 10s
+    image: "custom_airflow:2.5.1-python3.10"
+    ports:
+      - "8080:8080"
+    restart: always
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+    volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
+
+  airflow-worker:
+    command: "celery worker"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+#      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    image: "custom_airflow:2.5.1-python3.10"
+    restart: always
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+    volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
+
+  flower:
+    command: "celery flower"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+      AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ""
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+      AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+#      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    healthcheck:
+      interval: 10s
+      retries: 5
+      test:
+        - CMD
+        - curl
+        - "--fail"
+        - "http://localhost:5555/"
+      timeout: 10s
+    image: "custom_airflow:2.5.1-python3.10"
+    ports:
+      - "5555:5555"
+    restart: always
+    user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+    volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
+
+
+version: "3"
+volumes:
+  postgres-db-volume: ~
+x-airflow-common:
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  environment:
+    AIRFLOW__CELERY__BROKER_URL: "redis://:@redis:6379/0"
+    AIRFLOW__CELERY__RESULT_BACKEND: "db+postgresql://airflow:airflow@postgres/airflow"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://airflow:airflow@postgres/airflow"
+    AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "True"
+#    AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+  image: "${AIRFLOW_IMAGE_NAME:-apache/airflow:2.0.1}"
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"
+  volumes:
+      - "./dags:/opt/airflow/dags"
+      - "./logs:/opt/airflow/logs"
