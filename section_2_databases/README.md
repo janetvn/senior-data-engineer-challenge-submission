@@ -1,5 +1,5 @@
 # SECTION 2: DATABASES
-This sections contains the setup for a simple PostgreSQL container database, which stores sales transactions. 
+This sections contains the setup for a simple PostgreSQL container database, which stores sales transactions, and the analytical SQL statements for the analysts. 
 
 ## POSTGRESQL DATABASE
 
