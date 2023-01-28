@@ -1,6 +1,6 @@
 FROM apache/airflow:2.5.1-python3.10
 
-LABEL maintainer="mai.nguyen@coinhako.com"
+LABEL maintainer="janetvn@gmail.com"
 
 USER root
 
