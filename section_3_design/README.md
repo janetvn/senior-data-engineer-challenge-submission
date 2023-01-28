@@ -12,7 +12,7 @@ The design for the use case includes three (3) parts:
 
 ## Part 2: CI/CD Deployment
 
-![CICD](cidcd_deployment.png?raw=true "Title")
+![CICD](cicd_deployment.png?raw=true "Title")
 
 
 ## Part 3: Business Intelligence Resource
