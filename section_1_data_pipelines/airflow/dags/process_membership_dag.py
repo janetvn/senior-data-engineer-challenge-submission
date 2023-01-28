@@ -1,13 +1,13 @@
 import glob
+import hashlib
 import logging
 import os
-import hashlib
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 from pandas import DataFrame
 
@@ -59,7 +59,7 @@ def validate_checks(dataframe: DataFrame):
         """Calculate the age as of 1 Jan 2022"""
         today = date(2022, 1, 1)
         age = (
-                today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+            today.year - born.year - ((today.month, today.day) < (born.month, born.day))
         )
         return age > 18
 
@@ -115,11 +115,17 @@ def create_membership_ids(valid_dataframe: DataFrame):
         return hashed_string[:5]
 
     valid_dataframe["birthday_string"] = valid_dataframe["date_of_birth"].astype(str)
-    valid_dataframe["hashed_birthday"] = valid_dataframe["birthday_string"].apply(hash_birthday)
-    valid_dataframe["membership_id"] = valid_dataframe["last_name"] + valid_dataframe["hashed_birthday"]
+    valid_dataframe["hashed_birthday"] = valid_dataframe["birthday_string"].apply(
+        hash_birthday
+    )
+    valid_dataframe["membership_id"] = (
+        valid_dataframe["last_name"] + valid_dataframe["hashed_birthday"]
+    )
 
     # drop columns
-    valid_dataframe = valid_dataframe.drop(["birthday_string", "hashed_birthday"], axis=1)
+    valid_dataframe = valid_dataframe.drop(
+        ["birthday_string", "hashed_birthday"], axis=1
+    )
 
     return valid_dataframe
 
@@ -139,8 +145,18 @@ def process_applications(input_dir_path):
 
     # Write unsuccessful applications dataframe
     now = datetime.now()
-    invalid_path = cwd + "/dags/output/unsuccessful_applications/unsuccessful_applications_{}.csv".format(now.strftime("%Y%m%d.%H%M"))
-    valid_path = cwd + "/dags/output/successful_applications/successful_applications_{}.csv".format(now.strftime("%Y%m%d.%H%M"))
+    invalid_path = (
+        cwd
+        + "/dags/output/unsuccessful_applications/unsuccessful_applications_{}.csv".format(
+            now.strftime("%Y%m%d.%H%M")
+        )
+    )
+    valid_path = (
+        cwd
+        + "/dags/output/successful_applications/successful_applications_{}.csv".format(
+            now.strftime("%Y%m%d.%H%M")
+        )
+    )
 
     logger.info(f"Write unsuccessful applications to path {invalid_path}")
     invalid_df.to_csv(invalid_path, index=False)
